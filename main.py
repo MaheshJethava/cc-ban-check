@@ -14,6 +14,7 @@ TOKEN = os.getenv("TOKEN")
 
 # Constants – replace with your own IDs
 ALLOWED_CHANNEL_ID = 1397887223344398446
+LOG_CHANNEL_ID = None
 
 intents = discord.Intents.default()
 intents.message_content = True
