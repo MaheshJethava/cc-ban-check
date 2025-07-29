@@ -45,7 +45,7 @@ async def on_ready():
 
 # Ban check function
 async def check_ban(uid: str) -> dict | None:
-    url = f"https://api-check-ban2.vercel.app/{uid}" # https://api-check-ban.vercel.app/check_ban/{uid} OLD API
+    url = f"https://api-check-ban2.vercel.app/checkban/{uid}" # https://api-check-ban.vercel.app/check_ban/{uid} OLD API
     timeout = aiohttp.ClientTimeout(total=10)
 
     try:
