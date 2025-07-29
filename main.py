@@ -43,8 +43,6 @@ bot = commands.Bot(
     intents=intents
 )
 
-threading.Thread(target=run_flask).start()
-
 @bot.event
 async def on_ready():
     await bot.change_presence(
@@ -125,12 +123,11 @@ async def check_command(ctx, uid: str):
         region = result["region"]
         lang = "en"
 
-
-          embed = discord.Embed(
+        embed = discord.Embed(
             color=0xFF0000 if is_banned else 0x00FF00,
             timestamp=ctx.message.created_at
         )
-
+        
         if is_banned:
             embed.title = "**▌ Banned Account 🛑 **" if lang == "en" else "**▌ Compte banni 🛑 **"
             embed.description = (
