@@ -102,10 +102,6 @@ async def check_command(ctx, uid: str):
         await ctx.send("❌ This command can only be used in the authorized channel.")
         return
 
-    if ALLOWED_ROLE_ID not in [role.id for role in ctx.author.roles]:
-        await ctx.send("❌ You don't have permission to use this command.")
-        return
-
     if not uid.isdigit() or len(uid) < 5:
         await ctx.send("❌ Invalid UID format.")
         return
