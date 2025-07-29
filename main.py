@@ -39,14 +39,13 @@ bot = commands.Bot(
 @bot.event
 async def on_ready():
     await bot.change_presence(
-        status=discord.Status.dnd,  # Set to DND
-        activity=discord.Game("Id Checker By Mahesh")  # Custom status
+        activity=discord.Game("Clutch BanCheck"), status=discord.Status.dnd
     )
-    print(f"Logged in as {bot.user.name}")
+     print(f"✅ Logged in as {bot.user.name}")
 
 # Ban check function
 async def check_ban(uid: str) -> dict | None:
-    url = f"https://api-check-ban.vercel.app/check_ban/{uid}"
+    url = f"https://api-check-ban2.vercel.app/{uid}" # https://api-check-ban.vercel.app/check_ban/{uid} OLD API
     timeout = aiohttp.ClientTimeout(total=10)
 
     try:
