@@ -25,10 +25,9 @@ user_languages = {}
 
 nomBot = "None"
 
-@app.route('/')
-def home():
-    global nomBot
-    return f"Bot {nomBot} is working"
+@app.route("/")
+def index():
+    return "Bot is running!"
 
 def run_flask():
     app.run(host='0.0.0.0', port=10000)
