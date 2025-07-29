@@ -1,36 +1,29 @@
 import discord
-import os
 from discord.ext import commands
-from dotenv import load_dotenv
 from flask import Flask
 import threading
-from utils import check_ban
+import os
+import aiohttp
+from dotenv import load_dotenv
 
-app = Flask(__name__)
 
+# Load environment variables
 load_dotenv()
-APPLICATION_ID = os.getenv("APPLICATION_ID")
 TOKEN = os.getenv("TOKEN")
 
 # Constants – replace with your own IDs
-ALLOWED_CHANNEL_ID = 1397887223344398446
-LOG_CHANNEL_ID = None
+ALLOWED_CHANNEL_ID = 1399639011915726879
+LOG_CHANNEL_ID = 1381004112170061864
 
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-DEFAULT_LANG = "en"
-user_languages = {}
-
-nomBot = "None"
+# Flask server to keep bot alive
+app = Flask(__name__)
 
 @app.route("/")
 def index():
     return "Bot is running!"
 
 def run_flask():
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host="0.0.0.0", port=8080)
 
 # Discord bot setup
 intents = discord.Intents.default()
@@ -50,23 +43,6 @@ async def on_ready():
         activity=discord.Game("Id Checker By Mahesh")  # Custom status
     )
     print(f"Logged in as {bot.user.name}")
-
-@bot.command(name="guilds")
-async def show_guilds(ctx):
-    guild_names = [f"{i+1}. {guild.name}" for i, guild in enumerate(bot.guilds)]
-    guild_list = "\n".join(guild_names)
-    await ctx.send(f"Le bot est dans les guilds suivantes :\n{guild_list}")
-
-@bot.command(name="lang")
-async def change_language(ctx, lang_code: str):
-    lang_code = lang_code.lower()
-    if lang_code not in ["en", "fr"]:
-        await ctx.send("❌ Invalid language. Available: `en`, `fr`")
-        return
-
-    user_languages[ctx.author.id] = lang_code
-    message = "✅ Language set to English." if lang_code == 'en' else "✅ Langue définie sur le français."
-    await ctx.send(f"{ctx.author.mention} {message}")
 
 # Ban check function
 async def check_ban(uid: str) -> dict | None:
@@ -91,7 +67,6 @@ async def check_ban(uid: str) -> dict | None:
     except Exception as e:
         print(f"[❌] API error: {e}")
         return None
-
 
 # !check command
 @bot.command(name="check")
@@ -127,30 +102,26 @@ async def check_command(ctx, uid: str):
             color=0xFF0000 if is_banned else 0x00FF00,
             timestamp=ctx.message.created_at
         )
-        
+
         if is_banned:
-            embed.title = "**▌ Banned Account 🛑 **" if lang == "en" else "**▌ Compte banni 🛑 **"
+            embed.title = "**▌ Banned Account 🛑 **"
             embed.description = (
-                f"**• {'Reason' if lang == 'en' else 'Raison'} :** "
-                f"{'This account was confirmed for using cheats.' if lang == 'en' else 'Ce compte a été confirmé comme utilisant des hacks.'}\n"
-                f"**• {'Suspension duration' if lang == 'en' else 'Durée de la suspension'} :** {period_str}\n"
-                f"**• {'Nickname' if lang == 'en' else 'Pseudo'} :** `{nickname}`\n"
-                f"**• {'Player ID' if lang == 'en' else 'ID du joueur'} :** `{id_str}`\n"
-                f"**• {'Region' if lang == 'en' else 'Région'} :** `{region}`"
+                f"**• Reason :** This account was confirmed for using cheats.\n"
+                f"**• Suspension duration :** `{period} days`\n"
+                f"**• Nickname :** `{nickname}`\n"
+                f"**• Player ID :** `{uid}`\n"
+                f"**• Region :** `{region}`"
             )
-            # embed.set_image(url="https://i.ibb.co/wFxTy8TZ/banned.gif")
             file = discord.File("assets/banned.gif", filename="banned.gif")
             embed.set_image(url="attachment://banned.gif")
         else:
-            embed.title = "**▌ Clean Account ✅ **" if lang == "en" else "**▌ Compte non banni ✅ **"
+            embed.title = "**▌ Clean Account ✅ **"
             embed.description = (
-                f"**• {'Status' if lang == 'en' else 'Statut'} :** "
-                f"{'No sufficient evidence of cheat usage on this account.' if lang == 'en' else 'Aucune preuve suffisante pour confirmer l’utilisation de hacks sur ce compte.'}\n"
-                f"**• {'Nickname' if lang == 'en' else 'Pseudo'} :** `{nickname}`\n"
-                f"**• {'Player ID' if lang == 'en' else 'ID du joueur'} :** `{id_str}`\n"
-                f"**• {'Region' if lang == 'en' else 'Région'} :** `{region}`"
+                f"**• Status :** No sufficient evidence of cheat usage on this account.\n"
+                f"**• Nickname :** `{nickname}`\n"
+                f"**• Player ID :** `{uid}`\n"
+                f"**• Region :** `{region}`"
             )
-            # embed.set_image(url="https://i.ibb.co/Kx1RYVKZ/notbanned.gif")
             file = discord.File("assets/notbanned.gif", filename="notbanned.gif")
             embed.set_image(url="attachment://notbanned.gif")
 
@@ -159,7 +130,14 @@ async def check_command(ctx, uid: str):
 
         await ctx.send(content=f"{ctx.author.mention}", embed=embed, file=file)
 
-    
+        # Optional logging
+        if LOG_CHANNEL_ID:
+            log_channel = bot.get_channel(LOG_CHANNEL_ID)
+            if log_channel:
+                await log_channel.send(
+                    f"🔍 `{ctx.author}` checked UID `{uid}` — Result: {'Banned' if is_banned else 'Clean'}"
+                )
+
 # Start Flask and Bot
 threading.Thread(target=run_flask).start()
 bot.run(TOKEN)
