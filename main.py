@@ -154,7 +154,8 @@ async def check_command(ctx, uid: str):
             file = discord.File("assets/notbanned.gif", filename="notbanned.gif")
             embed.set_image(url="attachment://notbanned.gif")
 
-       embed.set_footer(text="CLUTCH CORPORATION ID CHECKER")
+        embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
+        embed.set_footer(text="CLUTCH CORPORATION ID CHECKER")
 
         await ctx.send(content=f"{ctx.author.mention}", embed=embed, file=file)
 
