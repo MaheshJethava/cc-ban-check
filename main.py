@@ -126,7 +126,7 @@ async def check_command(ctx, uid: str):
         lang = "en"
 
 
-        embed = discord.Embed(
+          embed = discord.Embed(
             color=0xFF0000 if is_banned else 0x00FF00,
             timestamp=ctx.message.created_at
         )
@@ -157,8 +157,11 @@ async def check_command(ctx, uid: str):
             file = discord.File("assets/notbanned.gif", filename="notbanned.gif")
             embed.set_image(url="attachment://notbanned.gif")
 
-        embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
-        embed.set_footer(text="FROM CLUTCH CORPORATION")
-        await ctx.send(f"{ctx.author.mention}", embed=embed ,file=file)
+       embed.set_footer(text="CLUTCH CORPORATION ID CHECKER")
 
+        await ctx.send(content=f"{ctx.author.mention}", embed=embed, file=file)
+
+    
+# Start Flask and Bot
+threading.Thread(target=run_flask).start()
 bot.run(TOKEN)
