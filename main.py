@@ -12,6 +12,9 @@ load_dotenv()
 APPLICATION_ID = os.getenv("APPLICATION_ID")
 TOKEN = os.getenv("TOKEN")
 
+# Constants – replace with your own IDs
+ALLOWED_CHANNEL_ID = 1397887223344398446
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -29,13 +32,26 @@ def home():
 def run_flask():
     app.run(host='0.0.0.0', port=10000)
 
+# Discord bot setup
+intents = discord.Intents.default()
+intents.message_content = True
+intents.guilds = True
+intents.members = True
+
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents
+)
+
 threading.Thread(target=run_flask).start()
 
 @bot.event
 async def on_ready():
-    global nomBot
-    nomBot = f"{bot.user}"
-    print(f"Le bot est connecté en tant que {bot.user}")
+    await bot.change_presence(
+        status=discord.Status.dnd,  # Set to DND
+        activity=discord.Game("Id Checker By Mahesh")  # Custom status
+    )
+    print(f"Logged in as {bot.user.name}")
 
 @bot.command(name="guilds")
 async def show_guilds(ctx):
@@ -54,47 +70,65 @@ async def change_language(ctx, lang_code: str):
     message = "✅ Language set to English." if lang_code == 'en' else "✅ Langue définie sur le français."
     await ctx.send(f"{ctx.author.mention} {message}")
 
-@bot.command(name="ID")
-async def check_ban_command(ctx):
-    content = ctx.message.content
-    user_id = content[3:].strip()
-    lang = user_languages.get(ctx.author.id, "en")
+# Ban check function
+async def check_ban(uid: str) -> dict | None:
+    url = f"https://api-check-ban.vercel.app/check_ban/{uid}"
+    timeout = aiohttp.ClientTimeout(total=10)
 
-    print(f"Commande fait par {ctx.author} (lang={lang})")
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    return None
+                data = await response.json()
+                if data.get("status") == 200 and data.get("data"):
+                    d = data["data"]
+                    return {
+                        "is_banned": d.get("is_banned", 0),
+                        "nickname": d.get("nickname", "Unknown"),
+                        "period": d.get("period", 0),
+                        "region": d.get("region", "Unknown")
+                    }
+                return None
+    except Exception as e:
+        print(f"[❌] API error: {e}")
+        return None
 
-    if not user_id.isdigit():
-        message = {
-            "en": f"{ctx.author.mention} ❌ **Invalid UID!**\n➡️ Please use: `!ID 123456789`",
-            "fr": f"{ctx.author.mention} ❌ **UID invalide !**\n➡️ Veuillez fournir un UID valide sous la forme : `!ID 123456789`"
-        }
-        await ctx.send(message[lang])
+
+# !check command
+@bot.command(name="check")
+async def check_command(ctx, uid: str):
+    if ctx.channel.id != ALLOWED_CHANNEL_ID:
+        await ctx.send("❌ This command can only be used in the authorized channel.")
+        return
+
+    if ALLOWED_ROLE_ID not in [role.id for role in ctx.author.roles]:
+        await ctx.send("❌ You don't have permission to use this command.")
+        return
+
+    if not uid.isdigit() or len(uid) < 5:
+        await ctx.send("❌ Invalid UID format.")
         return
 
     async with ctx.typing():
-        try:
-            ban_status = await check_ban(user_id)
-        except Exception as e:
-            await ctx.send(f"{ctx.author.mention} ⚠️ Error:\n```{str(e)}```")
+        result = await check_ban(uid)
+
+        if not result:
+            embed = discord.Embed(
+                title="❌ UID Not Found",
+                description="No data returned for the provided UID.",
+                color=0xFF0000
+            )
+            await ctx.send(embed=embed)
             return
 
-        if ban_status is None:
-            message = {
-                "en": f"{ctx.author.mention} ❌ **Could not get information. Please try again later.**",
-                "fr": f"{ctx.author.mention} ❌ **Impossible d'obtenir les informations.**\nVeuillez réessayer plus tard."
-            }
-            await ctx.send(message[lang])
-            return
+        # Extract data
+        is_banned = result["is_banned"]
+        nickname = result["nickname"]
+        period = result["period"]
+        region = result["region"]
+        lang = "en"
 
-        is_banned = int(ban_status.get("is_banned", 0))
-        period = ban_status.get("period", "N/A")
-        nickname = ban_status.get("nickname", "NA")
-        region = ban_status.get("region", "N/A")
-        id_str = f"`{user_id}`"
-
-        if isinstance(period, int):
-            period_str = f"more than {period} months" if lang == "en" else f"plus de {period} mois"
-        else:
-            period_str = "unavailable" if lang == "en" else "indisponible"
 
         embed = discord.Embed(
             color=0xFF0000 if is_banned else 0x00FF00,
