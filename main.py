@@ -41,7 +41,7 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Game("Clutch BanCheck"), status=discord.Status.dnd
     )
-     print(f"✅ Logged in as {bot.user.name}")
+    print(f"✅ Logged in as {bot.user.name}")
 
 # Ban check function
 async def check_ban(uid: str) -> dict | None:
